@@ -1,0 +1,5 @@
+C:/Users/hetou/UVicRocketry/quadspiStorageDriver/CMakeFiles/quadspiStorageDriver.dir
+C:/Users/hetou/UVicRocketry/quadspiStorageDriver/CMakeFiles/edit_cache.dir
+C:/Users/hetou/UVicRocketry/quadspiStorageDriver/CMakeFiles/rebuild_cache.dir
+C:/Users/hetou/UVicRocketry/quadspiStorageDriver/cmake/stm32cubemx/CMakeFiles/edit_cache.dir
+C:/Users/hetou/UVicRocketry/quadspiStorageDriver/cmake/stm32cubemx/CMakeFiles/rebuild_cache.dir
