@@ -28,6 +28,7 @@
 extern QSPI_HandleTypeDef hqspi;
 
 HAL_StatusTypeDef W25N_Reset();
+uint16_t W25N_Get_ID();
 HAL_StatusTypeDef W25N_Write_Disable();
 HAL_StatusTypeDef W25N_Write_Enable();
 HAL_StatusTypeDef W25_Write_Status_Reg(uint8_t reg, uint8_t set);

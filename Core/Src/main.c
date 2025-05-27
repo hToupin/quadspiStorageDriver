@@ -98,18 +98,16 @@ int main(void)
   MX_UART4_Init();
   MX_FATFS_Init();
 
-  /* USER CODE BEGIN 2 */
-  uint8_t message[] = "This is a very nice string!!\n";
-  uint8_t recieved[50] = {0};
-  W25N_Reset();
-  uint8_t reg_stat = 0;
-  reg_stat = W25_Read_Status_Reg(STAT_REG);
-  reg_stat = W25_Read_Status_Reg(CONFIG_REG);
-  reg_stat = W25_Read_Status_Reg(PROT_REG);
-  W25N_Write_Enable();
-  W25N_Write(0, 0, message, 30);
-  W25N_Read(0, 0, recieved, 50);
   
+  FATFS* file_system;
+  file_system = malloc(sizeof(FATFS));
+  FRESULT result = f_mount(file_system, "", 0);
+
+  FIL* file;
+  /* USER CODE BEGIN 2 */
+  FRESULT status = f_open(file, "test.txt", FA_WRITE);
+  if(status != FR_OK)
+    return 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */

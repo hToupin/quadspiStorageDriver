@@ -12,6 +12,28 @@ HAL_StatusTypeDef W25N_Reset()
     return HAL_OK;
 }
 
+uint16_t W25N_Get_ID()
+{
+    QSPI_CommandTypeDef command = {0};
+    command.Instruction = JEDEC_ID;
+    command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+
+    command.DummyCycles = 8;
+    command.NbData = 3;
+    command.DataMode = QSPI_DATA_1_LINE;
+
+    uint8_t data[3] = {0};
+
+    if(HAL_QSPI_Command(&hqspi, &command, 10) != HAL_OK)
+        return HAL_ERROR;
+    
+    HAL_QSPI_Receive(&hqspi, &data, 100);
+    
+    uint16_t id = (data[1] << 8) | data[2];
+
+    return id;
+}
+
 HAL_StatusTypeDef W25N_Write_Disable()
 {
     QSPI_CommandTypeDef command = {0};
@@ -32,9 +54,6 @@ HAL_StatusTypeDef W25N_Write_Enable()
     
     if(HAL_QSPI_Command(&hqspi, &command, 10) != HAL_OK)
         return HAL_ERROR;
-
-    uint8_t reg_stat = 0;
-    reg_stat = W25_Read_Status_Reg(STAT_REG);
 
     return HAL_OK;
 }
@@ -68,6 +87,8 @@ HAL_StatusTypeDef W25N_Write(uint16_t page_address, uint16_t column_address, uin
     if(data_len >= SECTOR_SIZE * 4 || page_address >= MAX_PAGE_ADDRESS || column_address >= MAX_COL_ADDRESS)
         return HAL_ERROR;
 
+    W25N_Write_Enable();
+
     QSPI_CommandTypeDef command = {0};
     command.Instruction = QUAD_PROGRAM_DATA_LOAD;
     command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
@@ -89,7 +110,7 @@ HAL_StatusTypeDef W25N_Write(uint16_t page_address, uint16_t column_address, uin
     command.NbData = 2;
     command.DataMode = QSPI_DATA_1_LINE;
 
-    uint8_t address[2] = {0, 0};
+    uint8_t address[2] = {page_address >> 8, page_address & 0xff};
 
     HAL_QSPI_Command(&hqspi, &command, 10);
     HAL_QSPI_Transmit(&hqspi, address, 50);
@@ -109,7 +130,7 @@ HAL_StatusTypeDef W25N_Read(uint16_t page_address, uint16_t column_address, uint
     command.NbData = 2;
     command.DataMode = QSPI_DATA_1_LINE;
 
-    uint8_t address[2] = {0, 0};
+    uint8_t address[2] = {page_address >> 8, page_address & 0xff};
 
     HAL_QSPI_Command(&hqspi, &command, 10);
     HAL_QSPI_Transmit(&hqspi, address, 50);

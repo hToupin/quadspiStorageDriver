@@ -82,8 +82,10 @@ DSTATUS USER_initialize (
 )
 {
   /* USER CODE BEGIN INIT */
-    Stat = STA_NOINIT;
-    return Stat;
+  Stat = STA_NOINIT;
+  if(W25N_Reset() == HAL_OK)
+    Stat = STA_PROTECT;
+  return Stat;
   /* USER CODE END INIT */
 }
 
@@ -98,6 +100,8 @@ DSTATUS USER_status (
 {
   /* USER CODE BEGIN STATUS */
     Stat = STA_NOINIT;
+    if(W25N_Get_ID() ==  0xAA21u)
+      Stat = STA_PROTECT;
     return Stat;
   /* USER CODE END STATUS */
 }
@@ -118,6 +122,25 @@ DRESULT USER_read (
 )
 {
   /* USER CODE BEGIN READ */
+
+  uint16_t page_address = sector/4;
+  uint16_t column_address = sector%4;
+  for(int i = 0; i < count; i++)
+  {
+    if(W25N_Read(page_address, column_address, buff, 512) != HAL_OK)
+      return RES_ERROR;
+
+    buff += 512;
+    if(column_address + 512 >= 2048)
+    {
+      page_address ++;
+      column_address = 0;
+    }
+    else
+    {
+      column_address += 512;
+    }
+  }
     return RES_OK;
   /* USER CODE END READ */
 }
@@ -140,6 +163,24 @@ DRESULT USER_write (
 {
   /* USER CODE BEGIN WRITE */
   /* USER CODE HERE */
+    uint16_t page_address = sector/4;
+    uint16_t column_address = sector%4;
+    for(int i = 0; i < count; i++)
+    {
+      if(W25N_Write(page_address, column_address, buff, 512) != HAL_OK)
+        return RES_ERROR;
+  
+      buff += 512;
+      if(column_address + 512 >= 2048)
+      {
+        page_address ++;
+        column_address = 0;
+      }
+      else
+      {
+        column_address += 512;
+      }
+    }
     return RES_OK;
   /* USER CODE END WRITE */
 }
