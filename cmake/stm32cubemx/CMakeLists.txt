@@ -25,7 +25,7 @@ target_include_directories(stm32cubemx INTERFACE
 
 target_sources(stm32cubemx INTERFACE
     ../../Core/Src/main.c
-    ../../Core/Src/w25no1gv.c
+    ../../Core/Src/w25n01gv.c
     ../../Core/Src/stm32l4xx_it.c
     ../../Core/Src/stm32l4xx_hal_msp.c
     ../../FATFS/Target/user_diskio.c

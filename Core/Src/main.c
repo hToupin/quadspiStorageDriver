@@ -23,7 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "w25no1gv.h"
+#include "w25n01gv.h"
 
 /* USER CODE END Includes */
 
@@ -97,8 +97,19 @@ int main(void)
   MX_QUADSPI_Init();
   MX_UART4_Init();
   MX_FATFS_Init();
-  /* USER CODE BEGIN 2 */
 
+  /* USER CODE BEGIN 2 */
+  uint8_t message[] = "This is a very nice string!!\n";
+  uint8_t recieved[50] = {0};
+  W25N_Reset();
+  uint8_t reg_stat = 0;
+  reg_stat = W25_Read_Status_Reg(STAT_REG);
+  reg_stat = W25_Read_Status_Reg(CONFIG_REG);
+  reg_stat = W25_Read_Status_Reg(PROT_REG);
+  W25N_Write_Enable();
+  W25N_Write(0, 0, message, 30);
+  W25N_Read(0, 0, recieved, 50);
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -173,10 +184,10 @@ static void MX_QUADSPI_Init(void)
   /* USER CODE END QUADSPI_Init 1 */
   /* QUADSPI parameter configuration*/
   hqspi.Instance = QUADSPI;
-  hqspi.Init.ClockPrescaler = 255;
+  hqspi.Init.ClockPrescaler = 1;
   hqspi.Init.FifoThreshold = 1;
   hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE;
-  hqspi.Init.FlashSize = 1;
+  hqspi.Init.FlashSize = 27;
   hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
   hqspi.Init.ClockMode = QSPI_CLOCK_MODE_0;
   if (HAL_QSPI_Init(&hqspi) != HAL_OK)
