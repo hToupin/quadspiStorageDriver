@@ -18,13 +18,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "fatfs.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
 #include "w25n01gv.h"
-
+#include "../../littlefs/lfs.h"
+#include "fatfs.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,6 +49,24 @@ UART_HandleTypeDef huart4;
 
 /* USER CODE BEGIN PV */
 
+const struct lfs_config cfg = {
+  .read = hal_lfs_read,
+  .prog = hal_lfs_prog,
+  .erase = hal_lfs_erase,
+  .sync = hal_lfs_sync,
+
+  //Device Config
+  .read_size = 32,
+  .prog_size = 32,
+  .block_size = 2048,
+  .block_count = 65536,
+  .cache_size = 32,
+  .lookahead_size = 32,
+  .block_cycles = 500
+};
+
+lfs_t lfs;
+lfs_file_t file;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,18 +114,31 @@ int main(void)
   MX_GPIO_Init();
   MX_QUADSPI_Init();
   MX_UART4_Init();
-  MX_FATFS_Init();
 
-  
-  FATFS* file_system;
-  file_system = malloc(sizeof(FATFS));
-  FRESULT result = f_mount(file_system, "", 0);
 
-  FIL* file;
   /* USER CODE BEGIN 2 */
-  FRESULT status = f_open(file, "test.txt", FA_WRITE);
-  if(status != FR_OK)
-    return 1;
+  int err = lfs_mount(&lfs, &cfg);
+  
+  if(err) 
+  {
+    lfs_format(&lfs, &cfg);
+    lfs_mount(&lfs, &cfg);
+  }
+
+  uint8_t boot_count = 0;
+  lfs_file_open(&lfs, &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
+
+  // update boot count
+  boot_count += 1;
+  lfs_file_rewind(&lfs, &file);
+  lfs_file_write(&lfs, &file, &boot_count, sizeof(boot_count));
+  lfs_file_read(&lfs, &file, &boot_count, sizeof(boot_count));
+
+  // remember the storage is not updated until the file is closed successfully
+  lfs_file_close(&lfs, &file);
+
+  // release any resources we were using
+  lfs_unmount(&lfs);
   /* USER CODE END 2 */
 
   /* Infinite loop */

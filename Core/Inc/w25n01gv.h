@@ -1,4 +1,6 @@
 #include "main.h"
+#include "../../littlefs/lfs.h"
+
 
 // Instruction Set
 #define RESET 0xFFU
@@ -35,6 +37,11 @@ HAL_StatusTypeDef W25_Write_Status_Reg(uint8_t reg, uint8_t set);
 uint8_t W25_Read_Status_Reg(uint8_t reg);
 HAL_StatusTypeDef W25N_Write(uint16_t page_address, uint16_t column_address, uint8_t* data, uint32_t data_len);
 HAL_StatusTypeDef W25N_Read(uint16_t page_address, uint16_t column_address, uint8_t* data, uint32_t data_len);
-HAL_StatusTypeDef W25N_Block_Erase(uint16_t page_address, uint16_t column_address);
+HAL_StatusTypeDef W25N_Page_Erase(uint16_t page_address);
+
+int hal_lfs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+int hal_lfs_prog(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+int hal_lfs_erase(const struct lfs_config *c, lfs_block_t block);
+int hal_lfs_sync(const struct lfs_config *c);
 
 

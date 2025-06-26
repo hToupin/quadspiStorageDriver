@@ -84,7 +84,7 @@ DSTATUS USER_initialize (
   /* USER CODE BEGIN INIT */
   Stat = STA_NOINIT;
   if(W25N_Reset() == HAL_OK)
-    Stat = STA_PROTECT;
+    Stat = 0;
   return Stat;
   /* USER CODE END INIT */
 }
@@ -101,7 +101,7 @@ DSTATUS USER_status (
   /* USER CODE BEGIN STATUS */
     Stat = STA_NOINIT;
     if(W25N_Get_ID() ==  0xAA21u)
-      Stat = STA_PROTECT;
+      Stat = 0;
     return Stat;
   /* USER CODE END STATUS */
 }

@@ -24,6 +24,8 @@ target_include_directories(stm32cubemx INTERFACE
 )
 
 target_sources(stm32cubemx INTERFACE
+    ../../littlefs/lfs.c
+    ../../littlefs/lfs_util.c
     ../../Core/Src/main.c
     ../../Core/Src/w25n01gv.c
     ../../Core/Src/stm32l4xx_it.c

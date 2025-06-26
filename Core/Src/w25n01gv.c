@@ -1,4 +1,8 @@
 #include "w25n01gv.h"
+#include "main.h"
+#include "../../littlefs/lfs.h"
+#include "../../littlefs/lfs_util.h"
+
 
 HAL_StatusTypeDef W25N_Reset()
 {
@@ -151,7 +155,45 @@ HAL_StatusTypeDef W25N_Read(uint16_t page_address, uint16_t column_address, uint
 }
 
 
-HAL_StatusTypeDef W25N_Block_Erase(uint16_t page_address, uint16_t column_address)
+
+
+HAL_StatusTypeDef W25N_Page_Erase(uint16_t page_address)
 {
+    uint8_t erase_buffer[2048] = {0xFF};
+    W25N_Write(page_address, 0, erase_buffer, 2048);
     return HAL_OK;
+}
+
+int hal_lfs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size)
+{
+    if(block > c->block_count || off + size > c->block_size)
+        return LFS_ERR_INVAL;
+    
+    if(W25N_Read(block, off, buffer, size) != HAL_OK)
+        return LFS_ERR_IO;
+
+    return LFS_ERR_OK;
+}
+
+int hal_lfs_prog(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size)
+{
+    if(block > c->block_count || off + size > c->block_size)
+        return LFS_ERR_INVAL;
+    
+    if(W25N_Read(block, off, buffer, size) != HAL_OK)
+        return LFS_ERR_IO;
+
+    return LFS_ERR_OK;
+}
+
+int hal_lfs_erase(const struct lfs_config *c, lfs_block_t block)
+{
+    W25N_Page_Erase(block);
+    return 0;
+}
+
+int hal_lfs_sync(const struct lfs_config *c)
+{
+    UNUSED(c);
+    return 0;
 }
