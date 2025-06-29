@@ -56,7 +56,7 @@ HAL_StatusTypeDef W25N_Write_Enable()
     command.Instruction = WRITE_ENABLE;
     command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
     
-    if(HAL_QSPI_Command(&hqspi, &command, 10) != HAL_OK)
+    if(HAL_QSPI_Command(&hqspi, &command, HAL_QSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
         return HAL_ERROR;
 
     return HAL_OK;
@@ -76,7 +76,6 @@ uint8_t W25_Read_Status_Reg(uint8_t reg)
     command.Address = reg;
     command.AddressSize= QSPI_ADDRESS_8_BITS;
     command.AddressMode = QSPI_ADDRESS_1_LINE;
-    command.DummyCycles = 6;
     command.NbData = 1;
     command.DataMode = QSPI_DATA_1_LINE;
 
@@ -86,18 +85,14 @@ uint8_t W25_Read_Status_Reg(uint8_t reg)
     return data;
 }
 
-HAL_StatusTypeDef W25N_Write(uint16_t page_address, uint16_t column_address, uint8_t *data, uint32_t data_len)
+HAL_StatusTypeDef W25N_Write_Buffer(uint16_t column_address, uint8_t *data, uint32_t data_len)
 {
-    if(data_len >= SECTOR_SIZE * 4 || page_address >= MAX_PAGE_ADDRESS || column_address >= MAX_COL_ADDRESS)
-        return HAL_ERROR;
-
     W25N_Write_Enable();
-
     QSPI_CommandTypeDef command = {0};
     command.Instruction = QUAD_PROGRAM_DATA_LOAD;
     command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
     command.Address = column_address;
-    command.AddressSize= QSPI_ADDRESS_16_BITS;
+    command.AddressSize = QSPI_ADDRESS_16_BITS;
     command.AddressMode = QSPI_ADDRESS_1_LINE;
     command.NbData = data_len;
     command.DataMode = QSPI_DATA_4_LINES;
@@ -105,46 +100,19 @@ HAL_StatusTypeDef W25N_Write(uint16_t page_address, uint16_t column_address, uin
     HAL_QSPI_Command(&hqspi, &command, 10);
     HAL_QSPI_Transmit(&hqspi, data, 50);
 
-    command.Instruction = PROGRAM_EXECUTE;
-    command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
-    command.Address = 0;
-    command.AddressSize = 0;
-    command.AddressMode = QSPI_ADDRESS_NONE;
-    command.DummyCycles = 8;
-    command.NbData = 2;
-    command.DataMode = QSPI_DATA_1_LINE;
-
-    uint8_t address[2] = {page_address >> 8, page_address & 0xff};
-
-    HAL_QSPI_Command(&hqspi, &command, 10);
-    HAL_QSPI_Transmit(&hqspi, address, 50);
-
     return HAL_OK;
 }
 
-HAL_StatusTypeDef W25N_Read(uint16_t page_address, uint16_t column_address, uint8_t *data, uint32_t data_len)
+HAL_StatusTypeDef W25N_Read_Buffer(uint16_t column_address, uint8_t *data, uint32_t data_len)
 {
-    if(data_len >= SECTOR_SIZE * 4 || page_address >= MAX_PAGE_ADDRESS || column_address >= MAX_COL_ADDRESS)
-        return HAL_ERROR;
-
+    W25N_Write_Enable();
     QSPI_CommandTypeDef command = {0};
-    command.Instruction = PAGE_DATA_READ;
-    command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
-    command.DummyCycles = 6;
-    command.NbData = 2;
-    command.DataMode = QSPI_DATA_1_LINE;
-
-    uint8_t address[2] = {page_address >> 8, page_address & 0xff};
-
-    HAL_QSPI_Command(&hqspi, &command, 10);
-    HAL_QSPI_Transmit(&hqspi, address, 50);
-
     command.Instruction = FAST_READ_QUAD_IO;
     command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
     command.Address = column_address;
     command.AddressSize = QSPI_ADDRESS_16_BITS;
     command.AddressMode = QSPI_ADDRESS_1_LINE;
-    command.DummyCycles = 8;
+    command.DummyCycles = 6;
     command.NbData = data_len;
     command.DataMode = QSPI_DATA_4_LINES;
 
@@ -154,46 +122,91 @@ HAL_StatusTypeDef W25N_Read(uint16_t page_address, uint16_t column_address, uint
     return HAL_OK;
 }
 
-
-
-
-HAL_StatusTypeDef W25N_Page_Erase(uint16_t page_address)
+HAL_StatusTypeDef W25N_Load_Page(uint16_t page_address)
 {
-    uint8_t erase_buffer[2048] = {0xFF};
-    W25N_Write(page_address, 0, erase_buffer, 2048);
+    W25N_Write_Enable();
+    QSPI_CommandTypeDef command = {0};
+    command.Instruction = PAGE_DATA_READ;
+    command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+    command.DummyCycles = 0;
+    command.NbData = 3;
+    command.DataMode = QSPI_DATA_1_LINE;
+
+    uint8_t address[3] = {0x00 ,page_address >> 8, page_address & 0xff};
+
+    HAL_QSPI_Command(&hqspi, &command, 10);
+    HAL_QSPI_Transmit(&hqspi, address, 50);
     return HAL_OK;
 }
 
-int hal_lfs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size)
+
+HAL_StatusTypeDef W25N_Program_Execute(uint16_t page_address)
 {
-    if(block > c->block_count || off + size > c->block_size)
-        return LFS_ERR_INVAL;
+    W25N_Write_Enable();
+    QSPI_CommandTypeDef command = {0};
+    command.Instruction = PROGRAM_EXECUTE;
+    command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+    command.Address = 0;
+    command.AddressSize = 0;
+    command.AddressMode = QSPI_ADDRESS_NONE;
+    command.DummyCycles = 0;
+    command.NbData = 3;
+    command.DataMode = QSPI_DATA_1_LINE;
+
+    uint8_t address[3] = {0x00 ,page_address >> 8, page_address & 0xff};
+
+    HAL_QSPI_Command(&hqspi, &command, 10);
+    HAL_QSPI_Transmit(&hqspi, address, 50);
+    return HAL_OK;
+}
+
+
+HAL_StatusTypeDef W25N_Block_Erase(uint16_t addr)
+{
+    W25N_Write_Enable();
+    QSPI_CommandTypeDef command = {0};
+    command.Instruction = BLOCK_ERASE;
+    command.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+    command.Address = 0;
+    command.AddressSize = QSPI_ADDRESS_NONE;
+    command.DummyCycles = 8;
+    command.NbData = 2;
+    command.DataMode = QSPI_DATA_1_LINE;
+
+    uint8_t address[2] = {addr >> 8, addr & 0xff};
+
+    HAL_QSPI_Command(&hqspi, &command, HAL_QSPI_TIMEOUT_DEFAULT_VALUE);
+    HAL_QSPI_Transmit(&hqspi, address, HAL_QSPI_TIMEOUT_DEFAULT_VALUE);
+
+    return HAL_OK;
+}
+
+// int spi_read(int addr, int size, char *buffer)
+// {
+//     if(block > c->block_count || off + size > c->block_size)
+//         return LFS_ERR_INVAL;
     
-    if(W25N_Read(block, off, buffer, size) != HAL_OK)
-        return LFS_ERR_IO;
+//     if(W25N_Read(block, off, buffer, size) != HAL_OK)
+//         return LFS_ERR_IO;
 
-    return LFS_ERR_OK;
-}
+//     return LFS_ERR_OK;
+// }
 
-int hal_lfs_prog(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size)
-{
-    if(block > c->block_count || off + size > c->block_size)
-        return LFS_ERR_INVAL;
+// int spi_read(int addr, int size, char *buffer);
+// {
+//     if(block > c->block_count || off + size > c->block_size)
+//         return LFS_ERR_INVAL;
     
-    if(W25N_Read(block, off, buffer, size) != HAL_OK)
-        return LFS_ERR_IO;
+//     if(W25N_Read(block, off, buffer, size) != HAL_OK)
+//         return LFS_ERR_IO;
 
-    return LFS_ERR_OK;
-}
+//     return LFS_ERR_OK;
+// }
 
-int hal_lfs_erase(const struct lfs_config *c, lfs_block_t block)
-{
-    W25N_Page_Erase(block);
-    return 0;
-}
+// int spi_erase(int addr, int size)
+// {
+//     W25N_Block_Erase(addr);
+//     return 0;
+// }
 
-int hal_lfs_sync(const struct lfs_config *c)
-{
-    UNUSED(c);
-    return 0;
-}
+
