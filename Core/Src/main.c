@@ -23,8 +23,6 @@
 /* USER CODE BEGIN Includes */
 
 #include "w25n01gv.h"
-#include "../../littlefs/lfs.h"
-#include "fatfs.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,24 +47,6 @@ UART_HandleTypeDef huart4;
 
 /* USER CODE BEGIN PV */
 
-const struct lfs_config cfg = {
-  .read = hal_lfs_read,
-  .prog = hal_lfs_prog,
-  .erase = hal_lfs_erase,
-  .sync = hal_lfs_sync,
-
-  //Device Config
-  .read_size = 32,
-  .prog_size = 32,
-  .block_size = 2048,
-  .block_count = 65536,
-  .cache_size = 32,
-  .lookahead_size = 32,
-  .block_cycles = 500
-};
-
-lfs_t lfs;
-lfs_file_t file;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -114,31 +94,10 @@ int main(void)
   MX_GPIO_Init();
   MX_QUADSPI_Init();
   MX_UART4_Init();
-
-
   /* USER CODE BEGIN 2 */
-  int err = lfs_mount(&lfs, &cfg);
+ 
   
-  if(err) 
-  {
-    lfs_format(&lfs, &cfg);
-    lfs_mount(&lfs, &cfg);
-  }
 
-  uint8_t boot_count = 0;
-  lfs_file_open(&lfs, &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
-
-  // update boot count
-  boot_count += 1;
-  lfs_file_rewind(&lfs, &file);
-  lfs_file_write(&lfs, &file, &boot_count, sizeof(boot_count));
-  lfs_file_read(&lfs, &file, &boot_count, sizeof(boot_count));
-
-  // remember the storage is not updated until the file is closed successfully
-  lfs_file_close(&lfs, &file);
-
-  // release any resources we were using
-  lfs_unmount(&lfs);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -214,11 +173,11 @@ static void MX_QUADSPI_Init(void)
   /* QUADSPI parameter configuration*/
   hqspi.Instance = QUADSPI;
   hqspi.Init.ClockPrescaler = 1;
-  hqspi.Init.FifoThreshold = 1;
+  hqspi.Init.FifoThreshold = 4;
   hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE;
-  hqspi.Init.FlashSize = 27;
+  hqspi.Init.FlashSize = 21;
   hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
-  hqspi.Init.ClockMode = QSPI_CLOCK_MODE_0;
+  hqspi.Init.ClockMode = QSPI_CLOCK_MODE_3;
   if (HAL_QSPI_Init(&hqspi) != HAL_OK)
   {
     Error_Handler();
@@ -272,8 +231,8 @@ static void MX_UART4_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -290,8 +249,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
