@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 
 #include "w25n01gv.h"
+#include "spiffs.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,6 +34,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+#define LOGICAL_PAGE_SIZE 2048
 
 /* USER CODE END PD */
 
@@ -45,7 +49,13 @@ QSPI_HandleTypeDef hqspi;
 
 UART_HandleTypeDef huart4;
 
+static spiffs fs;
+static uint8_t spiffs_work_buf[LOGICAL_PAGE_SIZE*2];
+static uint8_t spiffs_fds[LOGICAL_PAGE_SIZE];
+static uint8_t spiffs_cache_buf[(LOGICAL_PAGE_SIZE + 32) *4];
+
 /* USER CODE BEGIN PV */
+
 
 /* USER CODE END PV */
 
@@ -55,6 +65,8 @@ static void MX_GPIO_Init(void);
 static void MX_QUADSPI_Init(void);
 static void MX_UART4_Init(void);
 /* USER CODE BEGIN PFP */
+
+void spiffs_init();
 
 /* USER CODE END PFP */
 
@@ -95,8 +107,20 @@ int main(void)
   MX_QUADSPI_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
- 
+
   
+  spiffs_init();
+  char buf[12] = {0};
+    
+  // Surely, I've mounted spiffs before entering here
+  
+  spiffs_file fd = SPIFFS_open(&fs, "my_file", SPIFFS_CREAT | SPIFFS_TRUNC | SPIFFS_RDWR, 0);
+  SPIFFS_write(&fs, fd, (u8_t *)"Hello world", 12);
+  SPIFFS_close(&fs, fd); 
+
+  fd = SPIFFS_open(&fs, "my_file", SPIFFS_RDWR, 0);
+  SPIFFS_read(&fs, fd, (u8_t *)buf, 12);
+  SPIFFS_close(&fs, fd);
 
   /* USER CODE END 2 */
 
@@ -254,6 +278,28 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void spiffs_init()
+{
+  spiffs_config cfg;
+    
+  cfg.hal_read_f  = W25N_spiffs_Read;
+  cfg.hal_write_f = W25N_spiffs_Write;
+  cfg.hal_erase_f = W25N_spiffs_Erase;
+
+  W25N_Init();
+    
+  int res = SPIFFS_mount(
+    &fs,
+    &cfg,
+    spiffs_work_buf,
+    spiffs_fds,
+    sizeof(spiffs_fds),
+    spiffs_cache_buf,
+    sizeof(spiffs_cache_buf),
+    0);
+    res;
+}
 
 /* USER CODE END 4 */
 

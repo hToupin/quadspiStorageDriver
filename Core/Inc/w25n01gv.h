@@ -1,5 +1,5 @@
 #include "main.h"
-#include "spiffs.h"
+#include "spiffs_config.h"
 
 
 // Instruction Set
@@ -42,9 +42,30 @@ HAL_StatusTypeDef W25N_Program_Execute(uint16_t page_address);
 HAL_StatusTypeDef W25N_Load_Page(uint16_t page_address);
 HAL_StatusTypeDef W25N_Block_Erase(uint16_t page_address);
 
-// int spi_read(int addr, int size, char *buffer);
-// int spi_prog(int addr, int size, char *buffer);
-// int spi_erase(int addr, int size);
+int W25N_Read(uint32_t addr, uint32_t size, uint8_t *dst);
+int W25N_Write(uint32_t addr, uint32_t size, uint8_t *src);
+int W25N_Erase(uint32_t addr, uint32_t size);
+
+static s32_t W25N_spiffs_Read(u32_t addr, u32_t size, u8_t *dst)
+{
+    W25N_Read(addr, size, dst);
+    return 0;
+}
+
+static s32_t W25N_spiffs_Write(u32_t addr, u32_t size, u8_t *src)
+{
+    W25N_Write(addr, size, src);
+    return 0;
+}
+
+static s32_t W25N_spiffs_Erase(u32_t addr, u32_t size)
+{
+    W25N_Erase(addr, size);
+    return 0;
+}
+
+
+
 
 
 

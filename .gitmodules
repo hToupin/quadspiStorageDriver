@@ -1,6 +1,1 @@
-[submodule "littlefs"]
-	path = littlefs
-	url = https://github.com/littlefs-project/littlefs.git
-[submodule "spiffs"]
-	path = spiffs
-	url = https://github.com/pellepl/spiffs.git
+
