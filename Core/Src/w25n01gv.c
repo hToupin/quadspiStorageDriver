@@ -16,12 +16,6 @@ HAL_StatusTypeDef W25N_Reset()
     return HAL_OK;
 }
 
-HAL_StatusTypeDef W25N_Init()
-{
-    W25N_Write_Status_Reg(PROT_REG, 0);
-    return HAL_OK;
-}
-
 uint16_t W25N_Get_ID()
 {
     QSPI_CommandTypeDef command = {0};
@@ -85,6 +79,7 @@ HAL_StatusTypeDef W25N_Write_Status_Reg(uint8_t reg, uint8_t set)
     return HAL_OK;
 }
 
+
 uint8_t W25N_Read_Status_Reg(uint8_t reg)
 {
     uint8_t data;
@@ -103,7 +98,12 @@ uint8_t W25N_Read_Status_Reg(uint8_t reg)
     return data;
 }
 
-HAL_StatusTypeDef W25N_Write_Buffer(uint16_t column_address, uint8_t *data, uint32_t data_len)
+HAL_StatusTypeDef W25N_Init()
+{
+    W25N_Write_Status_Reg(PROT_REG, 0);
+    return HAL_OK;
+}
+
 HAL_StatusTypeDef W25N_Write_Buffer(uint16_t column_address, uint8_t *data, uint32_t data_len)
 {
     W25N_Write_Enable();
@@ -122,7 +122,7 @@ HAL_StatusTypeDef W25N_Write_Buffer(uint16_t column_address, uint8_t *data, uint
     return HAL_OK;
 }
 
-HAL_StatusTypeDef W25N_Read_Buffer(uint16_t column_address, uint8_t *data, uint32_t data_len)
+
 HAL_StatusTypeDef W25N_Read_Buffer(uint16_t column_address, uint8_t *data, uint32_t data_len)
 {
     if(data_len >= SECTOR_SIZE * 4)
@@ -146,7 +146,6 @@ HAL_StatusTypeDef W25N_Read_Buffer(uint16_t column_address, uint8_t *data, uint3
     return HAL_OK;
 }
 
-HAL_StatusTypeDef W25N_Load_Page(uint16_t page_address)
 HAL_StatusTypeDef W25N_Load_Page(uint16_t page_address)
 {
     W25N_Write_Enable();

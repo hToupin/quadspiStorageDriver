@@ -30,12 +30,12 @@
 extern QSPI_HandleTypeDef hqspi;
 
 HAL_StatusTypeDef W25N_Reset();
-HAL_StatusTypeDef W25N_Init();
 uint16_t W25N_Get_ID();
 HAL_StatusTypeDef W25N_Write_Disable();
 HAL_StatusTypeDef W25N_Write_Enable();
 HAL_StatusTypeDef W25_Write_Status_Reg(uint8_t reg, uint8_t set);
 uint8_t W25_Read_Status_Reg(uint8_t reg);
+HAL_StatusTypeDef W25N_Init();
 HAL_StatusTypeDef W25N_Write_Buffer(uint16_t column_address, uint8_t* data, uint32_t data_len);
 HAL_StatusTypeDef W25N_Read_Buffer(uint16_t column_address, uint8_t* data, uint32_t data_len);
 HAL_StatusTypeDef W25N_Program_Execute(uint16_t page_address);
