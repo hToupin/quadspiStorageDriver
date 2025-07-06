@@ -1,5 +1,7 @@
 #include "main.h"
 #include "spiffs_config.h"
+#include "lfs.h"
+#include "lfs_util.h"
 
 
 // Instruction Set
@@ -18,9 +20,10 @@
 #define FAST_READ_QUAD_IO 0x6BU
 
 // Chip Properties
-#define MAX_COL_ADDRESS 2048
-#define MAX_PAGE_ADDRESS 65536
-#define SECTOR_SIZE 512
+#define PAGE_SIZE 2048
+#define BLOCK_SIZE 64 * PAGE_SIZE
+#define BLOCK_COUNT 1024
+#define MEM_SIZE 1024 * BLOCK_SIZE
 
 // Status Registers
 #define PROT_REG 0xA0U
@@ -29,40 +32,23 @@
 
 extern QSPI_HandleTypeDef hqspi;
 
-HAL_StatusTypeDef W25N_Reset();
+int W25N_Reset();
 uint16_t W25N_Get_ID();
-HAL_StatusTypeDef W25N_Write_Disable();
-HAL_StatusTypeDef W25N_Write_Enable();
-HAL_StatusTypeDef W25_Write_Status_Reg(uint8_t reg, uint8_t set);
+int W25N_Write_Disable();
+int W25N_Write_Enable();
+int W25_Write_Status_Reg(uint8_t reg, uint8_t set);
 uint8_t W25_Read_Status_Reg(uint8_t reg);
-HAL_StatusTypeDef W25N_Init();
-HAL_StatusTypeDef W25N_Write_Buffer(uint16_t column_address, uint8_t* data, uint32_t data_len);
-HAL_StatusTypeDef W25N_Read_Buffer(uint16_t column_address, uint8_t* data, uint32_t data_len);
-HAL_StatusTypeDef W25N_Program_Execute(uint16_t page_address);
-HAL_StatusTypeDef W25N_Load_Page(uint16_t page_address);
-HAL_StatusTypeDef W25N_Block_Erase(uint16_t page_address);
+int W25N_Init();
+int W25N_Write_Buffer(uint16_t column_address, const uint8_t* data, uint32_t data_len);
+int W25N_Read_Buffer(uint16_t column_address, uint8_t* data, uint32_t data_len);
+int W25N_Program_Execute(uint16_t page_address);
+int W25N_Load_Page(uint16_t page_address);
+int W25N_Block_Erase(uint16_t page_address);
 
-int W25N_Read(uint32_t addr, uint32_t size, uint8_t *dst);
-int W25N_Write(uint32_t addr, uint32_t size, uint8_t *src);
-int W25N_Erase(uint32_t addr, uint32_t size);
-
-static s32_t W25N_spiffs_Read(u32_t addr, u32_t size, u8_t *dst)
-{
-    W25N_Read(addr, size, dst);
-    return 0;
-}
-
-static s32_t W25N_spiffs_Write(u32_t addr, u32_t size, u8_t *src)
-{
-    W25N_Write(addr, size, src);
-    return 0;
-}
-
-static s32_t W25N_spiffs_Erase(u32_t addr, u32_t size)
-{
-    W25N_Erase(addr, size);
-    return 0;
-}
+int W25N_Read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+int W25N_Write(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
+int W25N_Erase(const struct lfs_config *c, lfs_block_t block);
+int W25N_Sync(const struct lfs_config *c);
 
 
 

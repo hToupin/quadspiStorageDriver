@@ -23,7 +23,8 @@
 /* USER CODE BEGIN Includes */
 
 #include "w25n01gv.h"
-#include "spiffs.h"
+#include "lfs.h"
+#include "lfs_util.h"
 
 /* USER CODE END Includes */
 
@@ -49,12 +50,26 @@ QSPI_HandleTypeDef hqspi;
 
 UART_HandleTypeDef huart4;
 
-static spiffs fs;
-static uint8_t spiffs_work_buf[LOGICAL_PAGE_SIZE*2];
-static uint8_t spiffs_fds[LOGICAL_PAGE_SIZE];
-static uint8_t spiffs_cache_buf[(LOGICAL_PAGE_SIZE + 32) *4];
-
 /* USER CODE BEGIN PV */
+
+const struct lfs_config cfg =
+{
+  .read = W25N_Read,
+  .prog = W25N_Write,
+  .erase = W25N_Erase,
+  .sync = W25N_Sync,
+
+  .read_size = PAGE_SIZE,
+  .prog_size = PAGE_SIZE,
+  .block_size = BLOCK_SIZE,
+  .block_count = BLOCK_COUNT,
+  .cache_size = PAGE_SIZE,
+  .lookahead_size = 16,
+  .block_cycles = -1,
+};
+
+lfs_t lfs;
+lfs_file_t file;
 
 
 /* USER CODE END PV */
@@ -65,8 +80,6 @@ static void MX_GPIO_Init(void);
 static void MX_QUADSPI_Init(void);
 static void MX_UART4_Init(void);
 /* USER CODE BEGIN PFP */
-
-void spiffs_init();
 
 /* USER CODE END PFP */
 
@@ -107,21 +120,24 @@ int main(void)
   MX_QUADSPI_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
+  W25N_Reset();
+  W25N_Init();
 
-  
-  spiffs_init();
-  char buf[12] = {0};
-    
-  // Surely, I've mounted spiffs before entering here
-  
-  spiffs_file fd = SPIFFS_open(&fs, "my_file", SPIFFS_CREAT | SPIFFS_TRUNC | SPIFFS_RDWR, 0);
-  SPIFFS_write(&fs, fd, (u8_t *)"Hello world", 12);
-  SPIFFS_close(&fs, fd); 
+  uint8_t buffer[2048] = {0};
 
-  fd = SPIFFS_open(&fs, "my_file", SPIFFS_RDWR, 0);
-  SPIFFS_read(&fs, fd, (u8_t *)buf, 12);
-  SPIFFS_close(&fs, fd);
+  W25N_Read_Buffer(0, buffer, 18);
 
+  // mount the filesystem
+  int err = lfs_mount(&lfs, &cfg);
+
+  // reformat if we can't mount the filesystem
+  // this should only happen on the first boot
+  if (err) {
+      err = lfs_format(&lfs, &cfg);
+      err = lfs_mount(&lfs, &cfg);
+  }
+
+ 
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -156,7 +172,7 @@ void SystemClock_Config(void)
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-  RCC_OscInitStruct.MSICalibrationValue = 0;
+  RCC_OscInitStruct.MSICalibrationValue = 30;
   RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -199,7 +215,7 @@ static void MX_QUADSPI_Init(void)
   hqspi.Init.ClockPrescaler = 1;
   hqspi.Init.FifoThreshold = 4;
   hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE;
-  hqspi.Init.FlashSize = 21;
+  hqspi.Init.FlashSize = 30;
   hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
   hqspi.Init.ClockMode = QSPI_CLOCK_MODE_3;
   if (HAL_QSPI_Init(&hqspi) != HAL_OK)
@@ -278,28 +294,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-void spiffs_init()
-{
-  spiffs_config cfg;
-    
-  cfg.hal_read_f  = W25N_spiffs_Read;
-  cfg.hal_write_f = W25N_spiffs_Write;
-  cfg.hal_erase_f = W25N_spiffs_Erase;
-
-  W25N_Init();
-    
-  int res = SPIFFS_mount(
-    &fs,
-    &cfg,
-    spiffs_work_buf,
-    spiffs_fds,
-    sizeof(spiffs_fds),
-    spiffs_cache_buf,
-    sizeof(spiffs_cache_buf),
-    0);
-    res;
-}
 
 /* USER CODE END 4 */
 
